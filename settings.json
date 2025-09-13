@@ -1,19 +1,30 @@
 {
-    "WindowSize": {
-        "Width": 0,
-        "Hight": 0
-    },
-    "Bot": {
-        "IsWhiteBot": false,
-        "IsBlackBot": true,
-        "WhiteBotLevel": 0,
-        "BlackBotLevel": 5,
-        "BotScoringType": "NumberAndPotential",
-        "BotDelayMS": 0,
-        "NoRandom": false,
-        "Optimization": "O1"
-    },
-    "Game": {
-        "MaxNumTurns": 120
-    }
+  "WindowSize": {
+    "Width": 0,
+    "Width_comment": "ширина окна на полный экран",
+    "Hight": 0,
+    "Hight_comment": "высота окна на полный экран"
+  },
+  "Bot": {
+    "IsWhiteBot": false,
+    "IsWhiteBot_comment": "белые не являются ботом",
+    "IsBlackBot": true,
+    "IsBlackBot_comment": "черные являются ботом",
+    "WhiteBotLevel": 0,
+    "WhiteBotLevel_comment": "максимальная глубина поиска для белых равна 0 ходам",
+    "BlackBotLevel": 5,
+    "BlackBotLevel_comment": "максимальная глубина поиска для черных равна 5 ходам",
+    "BotScoringType": "NumberAndPotential",
+    "BotScoringType_comment": "ходы бота оцениваются по количеству и расстоянию шашек",
+    "BotDelayMS": 0,
+    "BotDelayMS_comment": "нет задержки ходов бота в миллисекундах",
+    "NoRandom": false,
+    "NoRandom_comment": "ход выбирается с рандомизацией",
+    "Optimization": "O1",
+    "Optimization_comment": "включена оптимизация для alpha-beta pruning"
+  },
+  "Game": {
+    "MaxNumTurns": 120,
+    "MaxNumTurns_comment": "максимальное количество ходов до ничьей равно 120"
+  }
 }
