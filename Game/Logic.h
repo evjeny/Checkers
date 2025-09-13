@@ -319,16 +319,26 @@ private:
     }
 
   public:
+    // список ходов
     vector<move_pos> turns;
+	// были ли ходы с выбиванием шашек
     bool have_beats;
+	// максимальный уровень просчета ходов
     int Max_depth;
 
   private:
+	  // генератор случайных чисел для перемешивания ходов
     default_random_engine rand_eng;
+	// режим подсчета очков
     string scoring_mode;
+	// уровень оптимизации альфа-бета отсечения
     string optimization;
+	// следующий ход
     vector<move_pos> next_move;
+	// следующий статус доски после хода
     vector<int> next_best_state;
+	// указатели на доску
     Board *board;
+	// указатель на конфиг
     Config *config;
 };
