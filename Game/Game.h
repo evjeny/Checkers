@@ -160,6 +160,7 @@ class Game
         {
             cells.emplace_back(turn.x, turn.y);
         }
+		// подсвечиваем возможные ходы
         board.highlight_cells(cells);
         move_pos pos = {-1, -1, -1, -1};
         POS_T x = -1, y = -1;
@@ -167,13 +168,16 @@ class Game
         while (true)
         {
             auto resp = hand.get_cell();
+			// если выбрана служебная кнопка (выход, откат, перезапуск), то возвращаем управление
             if (get<0>(resp) != Response::CELL)
                 return get<0>(resp);
+            // иначе проверяем ход на корректность
             pair<POS_T, POS_T> cell{get<1>(resp), get<2>(resp)};
 
             bool is_correct = false;
             for (auto turn : logic.turns)
             {
+                // если ход возможен, то отмечаем его как корректный
                 if (turn.x == cell.first && turn.y == cell.second)
                 {
                     is_correct = true;
@@ -185,12 +189,15 @@ class Game
                     break;
                 }
             }
+            // если нашли позицию
             if (pos.x != -1)
                 break;
+			// если ход оказался некорректным
             if (!is_correct)
             {
                 if (x != -1)
                 {
+					// перерисовываем подсветку возможных ходов
                     board.clear_active();
                     board.clear_highlight();
                     board.highlight_cells(cells);
@@ -215,6 +222,7 @@ class Game
         }
         board.clear_highlight();
         board.clear_active();
+        // передвижение шашки
         board.move_piece(pos, pos.xb != -1);
         if (pos.xb == -1)
             return Response::OK;
