@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 
 enum class Response
 {
-    OK,
-    BACK,
-    REPLAY,
-    QUIT,
-    CELL
+    OK, // выбран правильный ход
+    BACK, // кнопка отката хода
+	REPLAY, // кнопка перезапуска игры
+	QUIT, // кнопка выхода из игры
+	CELL // выбрана клетка на доске
 };
