@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <chrono>
 #include <thread>
 
@@ -20,13 +20,16 @@ class Game
     // to start checkers
     int play()
     {
+		// время начала игры
         auto start = chrono::steady_clock::now();
+		// перезапуск игры
         if (is_replay)
         {
             logic = Logic(&board, &config);
             config.reload();
             board.redraw();
         }
+        // первая игра
         else
         {
             board.start_draw();
@@ -36,26 +39,33 @@ class Game
         int turn_num = -1;
         bool is_quit = false;
         const int Max_turns = config("Game", "MaxNumTurns");
+        // цикл игры
         while (++turn_num < Max_turns)
         {
             beat_series = 0;
+            // поиск возможных ходов
             logic.find_turns(turn_num % 2);
             if (logic.turns.empty())
                 break;
+            // установка максмального уровня просчета ходов для бота
             logic.Max_depth = config("Bot", string((turn_num % 2) ? "Black" : "White") + string("BotLevel"));
+			// ход игрока
             if (!config("Bot", string("Is") + string((turn_num % 2) ? "Black" : "White") + string("Bot")))
             {
                 auto resp = player_turn(turn_num % 2);
+				// выход из игры
                 if (resp == Response::QUIT)
                 {
                     is_quit = true;
                     break;
                 }
+				// перезапуск игры
                 else if (resp == Response::REPLAY)
                 {
                     is_replay = true;
                     break;
                 }
+                // отмотать один ход назад
                 else if (resp == Response::BACK)
                 {
                     if (config("Bot", string("Is") + string((1 - turn_num % 2) ? "Black" : "White") + string("Bot")) &&
@@ -72,29 +82,39 @@ class Game
                     beat_series = 0;
                 }
             }
+			// ход бота
             else
                 bot_turn(turn_num % 2);
         }
+		// время конца игры
         auto end = chrono::steady_clock::now();
+		// запись времени игры в лог новой строкой
         ofstream fout(project_path + "log.txt", ios_base::app);
         fout << "Game time: " << (int)chrono::duration<double, milli>(end - start).count() << " millisec\n";
         fout.close();
 
+        // при перезапуске отрендерить еще раз
         if (is_replay)
             return play();
+        // при выходе вернуть значение (завершить рекурсию)
         if (is_quit)
             return 0;
         int res = 2;
+		// если превышено максимальное число ходов, то ничья
         if (turn_num == Max_turns)
         {
             res = 0;
         }
+        // если на текущем ходе побеждают белые
         else if (turn_num % 2)
         {
             res = 1;
         }
+        // отображение победителя
         board.show_final(res);
+        // ждем хода пользователя
         auto resp = hand.wait();
+		// при выборе кнопки REPLAY перезапуск игры
         if (resp == Response::REPLAY)
         {
             is_replay = true;
