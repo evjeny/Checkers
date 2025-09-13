@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -74,6 +74,7 @@ public:
         return 0;
     }
 
+	// перерисовка доски в начальное состояние
     void redraw()
     {
         game_results = -1;
@@ -84,6 +85,7 @@ public:
         clear_highlight();
     }
 
+	// передвинуть шашку с (x, y) на (x2, y2), если выбита шашка, то убрать ее с (xb, yb)
     void move_piece(move_pos turn, const int beat_series = 0)
     {
         if (turn.xb != -1)
@@ -93,6 +95,7 @@ public:
         move_piece(turn.x, turn.y, turn.x2, turn.y2, beat_series);
     }
 
+	// передвинуть шашку с (i, j) на (i2, j2)
     void move_piece(const POS_T i, const POS_T j, const POS_T i2, const POS_T j2, const int beat_series = 0)
     {
         if (mtx[i2][j2])
@@ -110,12 +113,14 @@ public:
         add_history(beat_series);
     }
 
+	// убрать шашку с доски
     void drop_piece(const POS_T i, const POS_T j)
     {
         mtx[i][j] = 0;
         rerender();
     }
 
+	// превращение шашки в дамку
     void turn_into_queen(const POS_T i, const POS_T j)
     {
         if (mtx[i][j] == 0 || mtx[i][j] > 2)
@@ -130,6 +135,7 @@ public:
         return mtx;
     }
 
+	// подсветка клеток, на которые можно сходить
     void highlight_cells(vector<pair<POS_T, POS_T>> cells)
     {
         for (auto pos : cells)
@@ -140,6 +146,7 @@ public:
         rerender();
     }
 
+	// убрать подсветку возможных ходов
     void clear_highlight()
     {
         for (POS_T i = 0; i < 8; ++i)
@@ -149,6 +156,7 @@ public:
         rerender();
     }
 
+    // подсветка выбранной шашки
     void set_active(const POS_T x, const POS_T y)
     {
         active_x = x;
@@ -156,6 +164,7 @@ public:
         rerender();
     }
 
+	// убрать подсветку выбранной шашки
     void clear_active()
     {
         active_x = -1;
@@ -168,6 +177,7 @@ public:
         return is_highlighted_[x][y];
     }
 
+	// откат хода
     void rollback()
     {
         auto beat_series = max(1, *(history_beat_series.rbegin()));
@@ -181,6 +191,7 @@ public:
         clear_active();
     }
 
+	// показ реузльтата игры
     void show_final(const int res)
     {
         game_results = res;

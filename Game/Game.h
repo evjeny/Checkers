@@ -224,6 +224,7 @@ class Game
         board.clear_active();
         // передвижение шашки
         board.move_piece(pos, pos.xb != -1);
+        // шашка никого не выбила, так что выходим
         if (pos.xb == -1)
             return Response::OK;
         // continue beating while can
