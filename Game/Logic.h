@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <random>
 #include <vector>
 
@@ -176,17 +176,20 @@ private:
     }
 
 public:
+    // поиск хода для цвета игрока
     void find_turns(const bool color)
     {
         find_turns(color, board->get_board());
     }
 
+	// поиска хода для шашки в позиции (x, y)
     void find_turns(const POS_T x, const POS_T y)
     {
         find_turns(x, y, board->get_board());
     }
 
 private:
+    // поиск хода для цвета игрока
     void find_turns(const bool color, const vector<vector<POS_T>> &mtx)
     {
         vector<move_pos> res_turns;
@@ -215,6 +218,7 @@ private:
         have_beats = have_beats_before;
     }
 
+    // поиска хода для шашки в позиции (x, y)
     void find_turns(const POS_T x, const POS_T y, const vector<vector<POS_T>> &mtx)
     {
         turns.clear();
