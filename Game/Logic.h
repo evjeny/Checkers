@@ -39,15 +39,20 @@ class Logic
 private:
     vector<vector<POS_T>> make_turn(vector<vector<POS_T>> mtx, move_pos turn) const
     {
+        // убираем побитую шашку
         if (turn.xb != -1)
             mtx[turn.xb][turn.yb] = 0;
+        // превращаем шашку в дамку
         if ((mtx[turn.x][turn.y] == 1 && turn.x2 == 0) || (mtx[turn.x][turn.y] == 2 && turn.x2 == 7))
             mtx[turn.x][turn.y] += 2;
+		// передвигаем шашку на новое место
         mtx[turn.x2][turn.y2] = mtx[turn.x][turn.y];
+		// очищаем старую позицию
         mtx[turn.x][turn.y] = 0;
         return mtx;
     }
 
+    // подсчет очков бота для оценки текущей расстановки
     double calc_score(const vector<vector<POS_T>> &mtx, const bool first_bot_color) const
     {
         // color - who is max player
@@ -56,22 +61,25 @@ private:
         {
             for (POS_T j = 0; j < 8; ++j)
             {
-                w += (mtx[i][j] == 1);
-                wq += (mtx[i][j] == 3);
-                b += (mtx[i][j] == 2);
-                bq += (mtx[i][j] == 4);
+                w += (mtx[i][j] == 1); // пешка белых
+				wq += (mtx[i][j] == 3); // дамка белых
+				b += (mtx[i][j] == 2); // пешка черных
+				bq += (mtx[i][j] == 4); // дамка черных
                 if (scoring_mode == "NumberAndPotential")
                 {
-                    w += 0.05 * (mtx[i][j] == 1) * (7 - i);
-                    b += 0.05 * (mtx[i][j] == 2) * (i);
+                    w += 0.05 * (mtx[i][j] == 1) * (7 - i); // насколько далеко пешка белых от дамки
+					b += 0.05 * (mtx[i][j] == 2) * (i); // насколько далеко пешка черных от дамки
                 }
             }
         }
+        // мы считаем очки для черных
         if (!first_bot_color)
         {
             swap(b, w);
             swap(bq, wq);
         }
+        
+		// если у белых нет шашек, то избегаем деления на ноль
         if (w + wq == 0)
             return INF;
         if (b + bq == 0)
@@ -79,6 +87,7 @@ private:
         int q_coef = 4;
         if (scoring_mode == "NumberAndPotential")
         {
+            // усиливаем коэффициент дамки
             q_coef = 5;
         }
         return (b + bq * q_coef) / (w + wq * q_coef);
