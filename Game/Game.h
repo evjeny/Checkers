@@ -124,30 +124,37 @@ class Game
     }
 
   private:
+    // ход бота
     void bot_turn(const bool color)
     {
         auto start = chrono::steady_clock::now();
 
         auto delay_ms = config("Bot", "BotDelayMS");
         // new thread for equal delay for each turn
+		// задержка перед ходом бота
         thread th(SDL_Delay, delay_ms);
+		// поиск лучших ходов
         auto turns = logic.find_best_turns(color);
+        // выход из задержки перед ходом
         th.join();
         bool is_first = true;
         // making moves
         for (auto turn : turns)
         {
+			// задержка между ходами в серии
             if (!is_first)
             {
                 SDL_Delay(delay_ms);
             }
             is_first = false;
+			// количество побитых шашек в серии
             beat_series += (turn.xb != -1);
             board.move_piece(turn, beat_series);
         }
 
         auto end = chrono::steady_clock::now();
         ofstream fout(project_path + "log.txt", ios_base::app);
+		// запись времени хода бота в лог новой строкой
         fout << "Bot turn time: " << (int)chrono::duration<double, milli>(end - start).count() << " millisec\n";
         fout.close();
     }
