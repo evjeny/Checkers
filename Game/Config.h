@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <fstream>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -13,6 +13,7 @@ class Config
         reload();
     }
 
+	// метод для перезагрузки настроек из файла settings.json
     void reload()
     {
         std::ifstream fin(project_path + "settings.json");
@@ -20,6 +21,7 @@ class Config
         fin.close();
     }
 
+    // метод для получения настройки по папке и имени
     auto operator()(const string &setting_dir, const string &setting_name) const
     {
         return config[setting_dir][setting_name];
