@@ -19,6 +19,33 @@ class Logic
         optimization = (*config)("Bot", "Optimization");
     }
 
+    vector<move_pos> find_best_turns(const bool color)
+    {
+        // Сбрасываем внутренние структуры, но используем их иначе
+        next_move.clear();
+        next_best_state.clear();
+
+        // Гарантируем наличие корневого состояния
+        next_best_state.push_back(-1);
+        next_move.emplace_back(-1, -1, -1, -1);
+
+        // Стартуем подбор лучшей линии хода для текущего игрока
+        // В качестве "корня" передаём текущую доску и state = 0
+        find_first_best_turn(board->get_board(), color, -1, -1, /*state=*/0, /*alpha=*/-1.0);
+
+        // Восстанавливаем найденную линию ходов из next_*
+        vector<move_pos> line;
+        int st = 0;
+        while (st != -1 && st < (int)next_move.size())
+        {
+            const auto mv = next_move[st];
+            if (mv.x == -1) break;
+            line.push_back(mv);
+            st = next_best_state[st];
+        }
+        return line;
+    }
+
 private:
     vector<vector<POS_T>> make_turn(vector<vector<POS_T>> mtx, move_pos turn) const
     {
@@ -74,6 +101,172 @@ private:
             q_coef = 5;
         }
         return (b + bq * q_coef) / (w + wq * q_coef);
+    }
+
+    double find_first_best_turn(std::vector<std::vector<POS_T>> mtx,
+        const bool color,
+        const POS_T x,
+        const POS_T y,
+        size_t state,
+        double alpha /*= -1*/)
+    {
+        // Убедимся, что для текущего узла есть плейсхолдеры
+        if (state >= next_move.size())
+        {
+            next_best_state.push_back(-1);
+            next_move.emplace_back(-1, -1, -1, -1);
+        }
+
+        // Получаем список доступных ходов:
+        // если x,y заданы - продолжаем бить той же шашкой, иначе ищем по цвету
+        if (x != -1) find_turns(x, y, mtx);
+        else         find_turns(color, mtx);
+
+        const auto local_turns = turns;
+        const bool forced_beat = have_beats;
+
+        // Если побитий нет и это не корневой "пустой" ход продолжения -
+        // передаём ход оппоненту на обычный рекурсивный просчёт
+        if (!forced_beat && x != -1)
+        {
+            return find_best_turns_rec(mtx, 1 - color, /*depth=*/0, alpha);
+        }
+
+        // Если совсем нет ходов — оценим позицию как проигранную/выигранную на этом уровне
+        if (local_turns.empty())
+        {
+            return 0.0; // при продолжении цепочки побитий отсутствие ходов => конец цепи
+        }
+
+        double best_score = -1.0;
+        int    best_next_state = -1;
+        move_pos best_move(-1, -1, -1, -1);
+
+        // Перебираем все ходы из текущего положения
+        for (const auto& mv : local_turns)
+        {
+            // Готовим дочернее состояние для восстановления линии
+            const size_t child_state = next_move.size();
+            next_best_state.push_back(-1);
+            next_move.emplace_back(-1, -1, -1, -1);
+
+            const auto next_mtx = make_turn(mtx, mv);
+
+            double score;
+            if (forced_beat)
+            {
+                // Продолжаем цепочку побитий той же шашкой (ход того же цвета, глубина не растёт)
+                score = find_first_best_turn(next_mtx, color, mv.x2, mv.y2, child_state, best_score);
+            }
+            else
+            {
+                // Обычный ход: передаём ход сопернику и считаем дальнейший расклад
+                score = find_best_turns_rec(next_mtx, 1 - color, /*depth=*/0, /*alpha=*/best_score);
+            }
+
+            if (score > best_score)
+            {
+                best_score = score;
+                best_move = mv;
+                best_next_state = forced_beat ? int(child_state) : -1;
+
+                // Пишем лучший на текущий момент результат в корень состояния
+                next_move[state] = best_move;
+                next_best_state[state] = best_next_state;
+
+                // Простейшее "псевдо"-альфа: для ускорения отсекаем явные аутсайдеры
+                if (optimization != "O0" && alpha >= 0.0 && best_score > alpha)
+                    alpha = best_score;
+            }
+        }
+
+        return best_score;
+    }
+
+    double find_best_turns_rec(std::vector<std::vector<POS_T>> mtx,
+        const bool color,
+        const size_t depth,
+        double alpha = -1,
+        double beta = INF + 1,
+        const POS_T x = -1,
+        const POS_T y = -1)
+    {
+        // Лист: достигнута максимальная глубина — оцениваем позицию
+        if (depth == static_cast<size_t>(Max_depth))
+        {
+            // Соответствие исходному контракту оценки:
+            // кто является "макс"-игроком определяется parity(depth) и color
+            return calc_score(mtx, (depth % 2 == color));
+        }
+
+        // Генерируем ходы: продолжение цепочки для конкретной шашки или общий поиск по цвету
+        if (x != -1) find_turns(x, y, mtx);
+        else         find_turns(color, mtx);
+
+        const bool forced_beat = have_beats;
+        const auto local_turns = turns;
+
+        // Если мы находимся в режиме продолжения конкретной шашки (x!=-1),
+        // но побитий нет — ход переходит сопернику, глубина увеличивается.
+        if (!forced_beat && x != -1)
+        {
+            return find_best_turns_rec(mtx, 1 - color, depth + 1, alpha, beta);
+        }
+
+        // Нет ходов вообще — терминальное состояние: победа/поражение по ходу
+        if (local_turns.empty())
+        {
+            return (depth % 2 ? 0.0 : double(INF));
+        }
+
+        // Минимакс с альфа-бета отсечениями.
+        // Чётная глубина — минимизатор, нечётная — максимизатор (как и раньше).
+        double best_min = INF + 1.0;
+        double best_max = -1.0;
+
+        for (const auto& mv : local_turns)
+        {
+            const auto next_mtx = make_turn(mtx, mv);
+            double val;
+
+            if (forced_beat || x != -1)
+            {
+                // Если есть обязательные побития или мы продолжаем цепочку,
+                // ход остаётся за тем же цветом и глубина не меняется.
+                val = find_best_turns_rec(next_mtx, color, depth,
+                    alpha, beta, mv.x2, mv.y2);
+            }
+            else
+            {
+                // Обычный ход: передаём очередь сопернику и увеличиваем глубину.
+                val = find_best_turns_rec(next_mtx, 1 - color, depth + 1,
+                    alpha, beta);
+            }
+
+            // Обновляем экстремумы
+            if (val < best_min) best_min = val;
+            if (val > best_max) best_max = val;
+
+            // Альфа-бета: на нечётной глубине максимизируем, на чётной — минимизируем
+            if (depth % 2)
+            {
+                // max-слой
+                if (val > alpha) alpha = val;
+            }
+            else
+            {
+                // min-слой
+                if (val < beta) beta = val;
+            }
+
+            if (optimization != "O0" && alpha >= beta)
+            {
+                // Небольшой сдвиг, как и раньше, чтобы стабилизировать возврат
+                return (depth % 2 ? best_max + 1.0 : best_min - 1.0);
+            }
+        }
+
+        return (depth % 2 ? best_max : best_min);
     }
 
 public:
